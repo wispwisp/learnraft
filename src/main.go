@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	log "github.com/wispwisp/learnraft/logger"
+	"github.com/wispwisp/learnraft/ping"
 )
 
 type Args struct {
@@ -31,6 +32,11 @@ func main() {
 
 	fileName := "./conf.json"
 	example := SomeJSONStruct{From: fileName}
+
+	if true {
+		statuses := ping.StartPing()
+		ping.RecievePing(statuses)
+	}
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, req *http.Request) {
 		log.Info("'/ping' HTTP handler")
