@@ -23,11 +23,6 @@ func registerArgs() (args Args) {
 	return
 }
 
-type SomeJSONStruct struct {
-	From   string `json:"from"`
-	Amount int    `json:"amount"`
-}
-
 func main() {
 	args := registerArgs()
 
@@ -89,6 +84,15 @@ func main() {
 		}
 
 		nodesInfo.Add(&nodeInfo)
+	})
+
+	http.HandleFunc("/nodes", func(w http.ResponseWriter, req *http.Request) {
+		if encodeErr := json.NewEncoder(w).Encode(nodesInfo.Get()); encodeErr != nil {
+			log.Error("Encode to json failed, err: ", encodeErr)
+			http.Error(w, "Encode to json failed", http.StatusBadRequest)
+			// http.NotFound(w, req)
+			return
+		}
 	})
 
 	log.Info("Server started on", *args.Port, "port")
