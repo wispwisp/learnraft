@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	log "github.com/wispwisp/learnraft/logger"
+	"github.com/wispwisp/learnraft/node"
 	"github.com/wispwisp/learnraft/ping"
 )
 
@@ -30,10 +31,13 @@ type SomeJSONStruct struct {
 func main() {
 	args := registerArgs()
 
-	fileName := "./conf.json"
-	example := SomeJSONStruct{From: fileName}
+	nodesFileName := "./nodes.json"
+	var nodesInfo node.NodesInfo
+	if err := nodesInfo.LoadFromFile(nodesFileName); err != nil {
+		log.Info("Fail to load from", nodesFileName, "error:", err)
+	}
 
-	if true {
+	if false {
 		statuses := ping.StartPing()
 		ping.RecievePing(statuses)
 	}
@@ -57,12 +61,34 @@ func main() {
 
 		log.Info(jsonRes)
 
-		if encodeErr := json.NewEncoder(w).Encode(example); encodeErr != nil {
+		nodes := nodesInfo.Get()
+		if encodeErr := json.NewEncoder(w).Encode(nodes); encodeErr != nil {
 			log.Error("Encode to json failed, err: ", encodeErr)
 			http.Error(w, "Encode to json failed", http.StatusBadRequest)
 			// http.NotFound(w, req)
 			return
 		}
+	})
+
+	http.HandleFunc("/addnode", func(w http.ResponseWriter, req *http.Request) {
+		log.Info("'/addnode' HTTP handler")
+
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			log.Error("error parsing request body:", err)
+			http.Error(w, "error parsing request", http.StatusBadRequest)
+			return
+		}
+
+		var nodeInfo node.NodeInfo
+		err = json.Unmarshal(body, &nodeInfo)
+		if err != nil {
+			log.Error("error parsing node info:", err)
+			http.Error(w, "error parsing node info", http.StatusBadRequest)
+			return
+		}
+
+		nodesInfo.Add(&nodeInfo)
 	})
 
 	log.Info("Server started on", *args.Port, "port")
