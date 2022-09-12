@@ -12,12 +12,14 @@ import (
 )
 
 type Args struct {
+	Addr    *string
 	Port    *string
 	Init    *bool
 	LogFile *string
 }
 
 func registerArgs() (args Args) {
+	args.Addr = flag.String("addr", "127.0.0.1", "server addr")
 	args.Port = flag.String("port", "8090", "server port")
 	args.Init = flag.Bool("init", false, "make initial actions")
 	args.LogFile = flag.String("log", "./node.log", "file for logs")
@@ -41,10 +43,9 @@ func main() {
 		logger.Info("Fail to load from", nodesFileName, "error:", err)
 	}
 
-	if false {
-		statuses := ping.StartPing()
-		ping.RecievePing(statuses)
-	}
+	nodeState := node.NewNodeState(*args.Addr, *args.Port)
+
+	ping.Elections(logger, nodeState, &nodesInfo)
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, req *http.Request) {
 		logger.Info("'/ping' HTTP handler")
@@ -100,6 +101,35 @@ func main() {
 			logger.Error("Encode to json failed, err: ", encodeErr)
 			http.Error(w, "Encode to json failed", http.StatusBadRequest)
 			// http.NotFound(w, req)
+			return
+		}
+	})
+
+	http.HandleFunc("/vote", func(w http.ResponseWriter, req *http.Request) {
+		logger.Info("'/vote' HTTP handler")
+
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			logger.Error("error parsing request body:", err)
+			http.Error(w, "error parsing request", http.StatusBadRequest)
+			return
+		}
+
+		var vote node.Vote
+		err = json.Unmarshal(body, &vote)
+		if err != nil {
+			logger.Error("error parsing node info:", err)
+			http.Error(w, "error parsing node info", http.StatusBadRequest)
+			return
+		}
+
+		logger.Info("Vote recieved:", vote)
+
+		// Accept new leader
+		voteResponse := node.VoteResponse{NewLeader: vote.NodeName}
+		if encodeErr := json.NewEncoder(w).Encode(voteResponse); encodeErr != nil {
+			logger.Error("Encode response to json failed, err: ", encodeErr)
+			http.Error(w, "Encode response to json failed", http.StatusBadRequest)
 			return
 		}
 	})

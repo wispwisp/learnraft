@@ -48,3 +48,5 @@ curl -X POST 127.0.0.1:8092/addnode \
      -d '{"uri":"127.0.0.1:8091"}'
 
 ps uax | grep learnraft
+
+echo "USE: kill $NODE1PID $NODE2PID $NODE3PID && sleep 1 && ps uax | grep learnraft"
