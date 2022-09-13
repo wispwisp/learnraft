@@ -169,6 +169,16 @@ func main() {
 
 		logger.Info("Message:", msg)
 
+		// TODO: json as a value - embedded commands
+		var jsonRes map[string]interface{}
+		err = json.Unmarshal([]byte(msg.Value), &jsonRes)
+		if err != nil {
+			logger.Error("Unmarshal err:", err)
+			return
+		} else {
+			logger.Info("Messages json:", jsonRes)
+		}
+
 		success := stor.Add(msg.Key, msg.Value)
 		if !success {
 			logger.Info("add message failed")
