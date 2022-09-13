@@ -1,15 +1,15 @@
 package storage
 
 import (
-	log "github.com/wispwisp/learnraft/logger"
+	"github.com/wispwisp/learnraft/mylogger"
 )
 
 type FileStorage struct {
 	filePath string
-	logger   *log.FileLogger
+	logger   mylogger.Logger
 }
 
-func NewFileStorage(filePath string, logger *log.FileLogger) *FileStorage {
+func NewFileStorage(filePath string, logger mylogger.Logger) *FileStorage {
 	return &FileStorage{
 		filePath: filePath,
 		logger:   logger,

@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	log "github.com/wispwisp/learnraft/logger"
+	"github.com/wispwisp/learnraft/mylogger"
 	"github.com/wispwisp/learnraft/node"
 	"github.com/wispwisp/learnraft/ping"
 	"github.com/wispwisp/learnraft/storage"
@@ -31,12 +31,15 @@ func registerArgs() (args Args) {
 func main() {
 	args := registerArgs()
 
-	logger, err := log.NewFileLogger(*args.LogFile)
-	if err != nil {
-		panic("Fail to initialize logger")
+	var logger mylogger.Logger
+	if true { // TODO: logger type from args
+		filelogger, err := mylogger.NewFileLogger(*args.LogFile)
+		if err != nil {
+			panic("Fail to initialize logger")
+		}
+		defer filelogger.Close()
+		logger = filelogger
 	}
-
-	defer logger.Close()
 
 	nodesFileName := "./nodes.json"
 	var nodesInfo node.NodesInfo
@@ -71,14 +74,6 @@ func main() {
 		}
 
 		logger.Info(jsonRes)
-
-		nodes := nodesInfo.Get()
-		if encodeErr := json.NewEncoder(w).Encode(nodes); encodeErr != nil {
-			logger.Error("Encode to json failed, err: ", encodeErr)
-			http.Error(w, "Encode to json failed", http.StatusBadRequest)
-			// http.NotFound(w, req)
-			return
-		}
 	})
 
 	http.HandleFunc("/addnode", func(w http.ResponseWriter, req *http.Request) {
@@ -190,7 +185,7 @@ func main() {
 	// --- USE TERM, if node not voted in this term, its vote for candidate
 
 	logger.Info("Server started on", *args.Port, "port")
-	err = http.ListenAndServe(":"+*args.Port, nil)
+	err := http.ListenAndServe(":"+*args.Port, nil)
 	if err != nil {
 		logger.Error("Server start error:", err)
 	}

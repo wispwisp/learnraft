@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/wispwisp/learnraft/logger"
+	"github.com/wispwisp/learnraft/mylogger"
 	"github.com/wispwisp/learnraft/node"
 )
 
@@ -24,24 +24,21 @@ func StartPingEx() (statuses chan int) {
 			<-ticker.C
 			statuses <- counter
 			counter++
-
-			log.Info("Status send:", counter)
 		}
 	}()
 
 	return
 }
 
-func RecievePingEx(statuses chan int) {
-	go func() {
-		for status := range statuses {
-			log.Info("Status recieved:", status)
+// func RecievePingEx(statuses chan int) {
+// 	go func() {
+// 		for status := range statuses {
+// 			log.Info("Status recieved:", status)
+// 		}
+// 	}()
+// }
 
-		}
-	}()
-}
-
-func SendVoteToOtherNodes(logger *log.FileLogger, nodesInfo *node.NodesInfo, v *node.Vote) []node.VoteResponse {
+func SendVoteToOtherNodes(logger mylogger.Logger, nodesInfo *node.NodesInfo, v *node.Vote) []node.VoteResponse {
 	ni := nodesInfo.Get()
 
 	l := len(ni)
@@ -97,7 +94,7 @@ func SendVoteToOtherNodes(logger *log.FileLogger, nodesInfo *node.NodesInfo, v *
 	return votes
 }
 
-func Elections(logger *log.FileLogger, nodeState *node.NodeState, nodesInfo *node.NodesInfo) {
+func Elections(logger mylogger.Logger, nodeState *node.NodeState, nodesInfo *node.NodesInfo) {
 	go func() {
 		// r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		// v := 150 + r.Intn(150) // 150-300 ms randomized
