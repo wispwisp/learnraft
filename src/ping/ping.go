@@ -106,6 +106,7 @@ func Elections(logger mylogger.Logger, nodeState *node.NodeState, nodesInfo *nod
 
 			if nodeState.GetState() != node.CANDIDATE {
 				<-ticker.C
+				logger.Debug("Not a candidate, skip elections")
 				continue
 			}
 

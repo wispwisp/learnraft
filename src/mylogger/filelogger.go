@@ -50,8 +50,9 @@ func (l *FileLogger) Close() {
 func (l *FileLogger) Error(msg ...interface{}) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
-	if l.level <= ERROR {
-		fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...) // fmt.Fprintln(l.writer, msg...)
+	if l.level == ERROR {
+		// fmt.Fprintln(l.writer, msg...)
+		fmt.Fprintln(l.writer, append([]interface{}{getTime(), "[ERROR]"}, msg...)...)
 		l.writer.Flush()
 	}
 }
@@ -59,8 +60,8 @@ func (l *FileLogger) Error(msg ...interface{}) {
 func (l *FileLogger) Waring(msg ...interface{}) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
-	if l.level <= WARNING {
-		fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...)
+	if l.level >= WARNING {
+		fmt.Fprintln(l.writer, append([]interface{}{getTime(), "[WARNING]"}, msg...)...)
 		l.writer.Flush()
 	}
 }
@@ -68,8 +69,8 @@ func (l *FileLogger) Waring(msg ...interface{}) {
 func (l *FileLogger) Info(msg ...interface{}) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
-	if l.level <= INFO {
-		fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...)
+	if l.level >= INFO {
+		fmt.Fprintln(l.writer, append([]interface{}{getTime(), "[INFO]"}, msg...)...)
 		l.writer.Flush()
 	}
 }
@@ -77,8 +78,8 @@ func (l *FileLogger) Info(msg ...interface{}) {
 func (l *FileLogger) Debug(msg ...interface{}) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
-	if l.level <= DEBUG {
-		fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...)
+	if l.level == DEBUG {
+		fmt.Fprintln(l.writer, append([]interface{}{getTime(), "[DEBUG]"}, msg...)...)
 		l.writer.Flush()
 	}
 }
