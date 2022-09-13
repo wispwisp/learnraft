@@ -9,6 +9,7 @@ import (
 	log "github.com/wispwisp/learnraft/logger"
 	"github.com/wispwisp/learnraft/node"
 	"github.com/wispwisp/learnraft/ping"
+	"github.com/wispwisp/learnraft/storage"
 )
 
 type Args struct {
@@ -41,6 +42,11 @@ func main() {
 	var nodesInfo node.NodesInfo
 	if err := nodesInfo.LoadFromFile(nodesFileName); err != nil {
 		logger.Info("Fail to load from", nodesFileName, "error:", err)
+	}
+
+	var stor storage.Storage
+	if true { // TODO: storage type from args
+		stor = storage.NewFileStorage("./node_"+*args.Port, logger)
 	}
 
 	nodeState := node.NewNodeState(*args.Addr, *args.Port)
@@ -133,6 +139,45 @@ func main() {
 			return
 		}
 	})
+
+	http.HandleFunc("/add", func(w http.ResponseWriter, req *http.Request) {
+		logger.Info("'/add' HTTP handler")
+
+		// TODO (Log Replication):
+		// If not Leader - proxy to leader
+		// Add to storage (Uncommited)
+		// Send to others
+		// Wait for response from majority (N/2)
+		// Commit on leader. Response to client here.
+		// Send to other that change commited
+		// Other set that commited.
+
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			logger.Error("error parsing request body:", err)
+			http.Error(w, "error parsing request", http.StatusBadRequest)
+			return
+		}
+
+		var msg storage.Message
+		err = json.Unmarshal(body, &msg)
+		if err != nil {
+			logger.Error("error parsing message:", err)
+			http.Error(w, "error parsing message", http.StatusBadRequest)
+			return
+		}
+
+		logger.Info("Message:", msg)
+
+		success := stor.Add(msg.Key, msg.Value)
+		if !success {
+			logger.Info("add message failed")
+		}
+	})
+
+	// TODO: recieve leader ping. Drop timeout for candidate to become a leader
+	// If no leader ping recieved, follower become candidate and vote for himself
+	// --- USE TERM, if node not voted in this term, its vote for candidate
 
 	logger.Info("Server started on", *args.Port, "port")
 	err = http.ListenAndServe(":"+*args.Port, nil)

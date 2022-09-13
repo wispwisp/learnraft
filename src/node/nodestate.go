@@ -7,9 +7,9 @@ import (
 type State int
 
 const (
-	LEADER    State = iota
-	CANDIDATE State = iota
 	FOLOWER   State = iota
+	CANDIDATE State = iota
+	LEADER    State = iota
 )
 
 type NodeState struct {
@@ -32,7 +32,7 @@ func (ns *NodeState) GetUri() string {
 }
 
 func (ns *NodeState) SetState(state State) {
-	if state < LEADER || state > FOLOWER {
+	if state < FOLOWER || state > LEADER {
 		return
 	}
 

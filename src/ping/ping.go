@@ -103,14 +103,25 @@ func Elections(logger *log.FileLogger, nodeState *node.NodeState, nodesInfo *nod
 		// v := 150 + r.Intn(150) // 150-300 ms randomized
 
 		counter := 0
-		ticker := time.NewTicker(5 * time.Second) // TODO: 150-300 ms randomized
+		ticker := time.NewTicker(1 * time.Second)
 		for {
-			<-ticker.C
+			<-ticker.C // TODO: only when not a candidate
+
+			if nodeState.GetState() != node.CANDIDATE {
+				<-ticker.C
+				continue
+			}
+
+			// TODO: 150-300 ms randomized timeout
+
 			counter++
 
+			// Vote for self
 			v := &node.Vote{NodeName: nodeState.GetUri()}
 			votes := SendVoteToOtherNodes(logger, nodesInfo, v)
 			logger.Info("votes recieved:", votes)
+
+			// TODO: if consensus (N/2) accepts (all returns this node URI) - became a leader.
 		}
 	}()
 }
