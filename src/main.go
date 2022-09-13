@@ -118,8 +118,8 @@ func main() {
 		var vote node.Vote
 		err = json.Unmarshal(body, &vote)
 		if err != nil {
-			logger.Error("error parsing node info:", err)
-			http.Error(w, "error parsing node info", http.StatusBadRequest)
+			logger.Error("error parsing vote:", err)
+			http.Error(w, "error parsing vote", http.StatusBadRequest)
 			return
 		}
 
@@ -137,6 +137,6 @@ func main() {
 	logger.Info("Server started on", *args.Port, "port")
 	err = http.ListenAndServe(":"+*args.Port, nil)
 	if err != nil {
-		logger.Error("Server start error", err)
+		logger.Error("Server start error:", err)
 	}
 }

@@ -46,6 +46,12 @@ func (ni *NodesInfo) Get() []NodeInfo {
 	return aCopy
 }
 
+func (ni *NodesInfo) Len() int {
+	ni.mtx.Lock()
+	defer ni.mtx.Unlock()
+	return len(ni.nodesInfo)
+}
+
 func (ni *NodesInfo) LoadFromFile(fileName string) error {
 	data, err := os.ReadFile(fileName)
 	if err != nil {

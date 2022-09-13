@@ -15,8 +15,8 @@ const (
 type NodeState struct {
 	mtx   sync.Mutex
 	state State
-	term  int
-	uri   string
+	// term  int
+	uri string
 }
 
 func NewNodeState(addr, port string) (nodeState *NodeState) {

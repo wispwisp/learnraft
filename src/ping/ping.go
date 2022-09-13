@@ -3,7 +3,9 @@ package ping
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	log "github.com/wispwisp/learnraft/logger"
@@ -39,10 +41,21 @@ func RecievePingEx(statuses chan int) {
 	}()
 }
 
-func SendVoteToOtherNodes(logger *log.FileLogger, nodesInfo *node.NodesInfo, v *node.Vote) {
+func SendVoteToOtherNodes(logger *log.FileLogger, nodesInfo *node.NodesInfo, v *node.Vote) []node.VoteResponse {
 	ni := nodesInfo.Get()
-	for _, nodeInfo := range ni {
-		go func(uri string) {
+
+	l := len(ni)
+
+	var wg sync.WaitGroup
+
+	votes := make([]node.VoteResponse, l)
+
+	for i := 0; i < l; i++ {
+		wg.Add(1)
+
+		go func(iteration int, uri string) {
+			defer wg.Done()
+
 			logger.Info("Send vote to", uri)
 
 			jsonData, err := json.Marshal(v)
@@ -58,16 +71,37 @@ func SendVoteToOtherNodes(logger *log.FileLogger, nodesInfo *node.NodesInfo, v *
 			}
 
 			// Log result
-			var res map[string]interface{}
-			json.NewDecoder(resp.Body).Decode(&res)
-			logger.Info("Vote response:", res)
+			// var res map[string]interface{}
+			// json.NewDecoder(resp.Body).Decode(&res)
+			// logger.Info("Vote response:", res)
 
-		}("http://" + nodeInfo.Uri + "/vote")
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				logger.Error("error response request body:", err)
+				return
+			}
+
+			var voteResp node.VoteResponse
+			err = json.Unmarshal(body, &voteResp)
+			if err != nil {
+				logger.Error("error parsing vote response:", err)
+				return
+			}
+
+			votes[iteration] = voteResp
+
+		}(i, "http://"+ni[i].Uri+"/vote")
 	}
+
+	wg.Wait()
+	return votes
 }
 
 func Elections(logger *log.FileLogger, nodeState *node.NodeState, nodesInfo *node.NodesInfo) {
 	go func() {
+		// r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		// v := 150 + r.Intn(150) // 150-300 ms randomized
+
 		counter := 0
 		ticker := time.NewTicker(5 * time.Second) // TODO: 150-300 ms randomized
 		for {
@@ -75,7 +109,8 @@ func Elections(logger *log.FileLogger, nodeState *node.NodeState, nodesInfo *nod
 			counter++
 
 			v := &node.Vote{NodeName: nodeState.GetUri()}
-			SendVoteToOtherNodes(logger, nodesInfo, v)
+			votes := SendVoteToOtherNodes(logger, nodesInfo, v)
+			logger.Info("votes recieved:", votes)
 		}
 	}()
 }
