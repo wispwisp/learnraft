@@ -33,7 +33,7 @@ func main() {
 
 	var logger mylogger.Logger
 	if true { // TODO: logger type from args
-		filelogger, err := mylogger.NewFileLogger(*args.LogFile)
+		filelogger, err := mylogger.NewFileLogger(mylogger.INFO, *args.LogFile)
 		if err != nil {
 			panic("Fail to initialize logger")
 		}

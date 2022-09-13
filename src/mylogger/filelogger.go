@@ -2,6 +2,7 @@ package mylogger
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -11,24 +12,32 @@ import (
 type FileLogger struct {
 	mtx      sync.Mutex
 	fileName string
-
-	fh     *os.File
-	writer *bufio.Writer
+	level    Level
+	fh       *os.File
+	writer   *bufio.Writer
 }
 
 func getTime() string {
 	return time.Now().Format("2006-01-02 15:04:05")
 }
 
-func NewFileLogger(fileName string) (logger *FileLogger, err error) {
+func NewFileLogger(level Level, fileName string) (logger *FileLogger, err error) {
 	f, err := os.Create(fileName)
 	if err != nil {
 		return
 	}
 
-	logger = &FileLogger{fileName: fileName}
-	logger.fh = f
-	logger.writer = bufio.NewWriter(f)
+	if level < ERROR || level > DEBUG {
+		err = errors.New("wrong level")
+		return
+	}
+
+	logger = &FileLogger{
+		fileName: fileName,
+		level:    level,
+		fh:       f,
+		writer:   bufio.NewWriter(f),
+	}
 
 	return
 }
@@ -38,30 +47,38 @@ func (l *FileLogger) Close() {
 	l.writer.Flush()
 }
 
+func (l *FileLogger) Error(msg ...interface{}) {
+	l.mtx.Lock()
+	defer l.mtx.Unlock()
+	if l.level <= ERROR {
+		fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...) // fmt.Fprintln(l.writer, msg...)
+		l.writer.Flush()
+	}
+}
+
 func (l *FileLogger) Waring(msg ...interface{}) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
-	fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...)
-	l.writer.Flush()
+	if l.level <= WARNING {
+		fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...)
+		l.writer.Flush()
+	}
 }
 
 func (l *FileLogger) Info(msg ...interface{}) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
-	fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...)
-	l.writer.Flush()
-}
-
-func (l *FileLogger) Error(msg ...interface{}) {
-	l.mtx.Lock()
-	defer l.mtx.Unlock()
-	fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...) // fmt.Fprintln(l.writer, msg...)
-	l.writer.Flush()
+	if l.level <= INFO {
+		fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...)
+		l.writer.Flush()
+	}
 }
 
 func (l *FileLogger) Debug(msg ...interface{}) {
-	// l.mtx.Lock()
-	// defer l.mtx.Unlock()
-	// fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...)
-	// l.writer.Flush()
+	l.mtx.Lock()
+	defer l.mtx.Unlock()
+	if l.level <= DEBUG {
+		fmt.Fprintln(l.writer, append([]interface{}{getTime()}, msg...)...)
+		l.writer.Flush()
+	}
 }
